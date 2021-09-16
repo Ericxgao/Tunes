@@ -1,81 +1,68 @@
-//SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
-import "@openzeppelin/contracts/interfaces/IERC721Metadata.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TunesMetadata is Ownable {
-    IERC721Enumerable public tunes;
-
-    struct OfficialMetadata {
-        string key;
-        address devAddress;
-    }
-
-    mapping(string => OfficialMetadata) public officialMetadata;
-    string[] public officialMetadataAliases;
+contract TunesDerivative is ERC721, ERC721URIStorage, Ownable {
+    using Strings for uint256;
     
-    mapping(address => mapping(string => mapping(uint => string))) public directMetadata;
+    IERC721Enumerable public tunes = IERC721Enumerable(0xfa932d5cBbDC8f6Ed6D96Cc6513153aFa9b7487C);
+    bool public frozen = false;
+    string private _tokenBaseURI;
     
-    mapping(address => mapping(string => address)) public inheritedMetadata;
-
-    constructor(address _tunesAddress) {
-       tunes = IERC721Enumerable(_tunesAddress);
-    }
-
-    function ownerOf(uint tokenId) public view returns (address owner) {
-        require (tokenId <= tunes.totalSupply(), 'Invalid tokenID');
-        return tunes.ownerOf(tokenId);
-    }
-
-    function setOfficialMetadata(address _devAddress, string memory _key, string memory _metadataKeyAlias) public onlyOwner {
-        OfficialMetadata storage officialMetadataInstance = officialMetadata[_metadataKeyAlias];
-        
-        // Only update the keys if this was never set
-        if (bytes(officialMetadataInstance.key).length == 0) {
-            officialMetadataAliases.push(_metadataKeyAlias);
-        }
-
-        officialMetadataInstance.devAddress = _devAddress;
-        officialMetadataInstance.key = _key;
+    constructor() ERC721("Tunes Derivative", "TD") {}
+    
+    function _baseURI() internal override view returns (string memory) {
+        return _tokenBaseURI;
     }
     
-    function getOfficialMetadata(string memory _metadataKeyAlias, uint _tokenID) public view returns (string memory) {
-        OfficialMetadata memory officialMetadataInstance = officialMetadata[_metadataKeyAlias];
-        require(bytes(officialMetadataInstance.key).length > 0, "This is not an official alias.");
+    function setBaseURI(string memory baseURI) public onlyOwner {
+        require(!frozen, "Contract is frozen.");
 
-        return getMetadata(officialMetadataInstance.devAddress, officialMetadataInstance.key, _tokenID);
+        _tokenBaseURI = baseURI;
     }
-    
-    function getOfficialMetadataAliases() public view returns (string[] memory) {
-        return officialMetadataAliases;
-    }
-    
-    // First, check to see if there's a contract linked. Any inherited metadata always takes priority of metadata that is directly set.
-    
-    function getMetadata(address _devAddress, string memory _key, uint _tokenID) public view returns (string memory) {
-        require (_tokenID <= tunes.totalSupply(), 'Invalid tokenID');
-        address derivativeContractAddress = inheritedMetadata[_devAddress][_key];
-        
-        if (derivativeContractAddress != address(0)) {
-            IERC721Metadata derivativeContract = IERC721Metadata(inheritedMetadata[_devAddress][_key]);
-            return derivativeContract.tokenURI(_tokenID);
+
+    function claim(uint256[] calldata tokenIds) public {
+        for(uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            
+            require(tokenId > 0 && tokenId < tunes.totalSupply(), "You cannot mint outside of the IDs of Tunes.");
+            require(tunes.ownerOf(tokenId) == msg.sender, "You must own the corresponding Tune to mint this.");
         }
         
-        return directMetadata[_devAddress][_key][_tokenID];
+        // Use two loops to prevent safemint call if a token id later in the flow is incorrect. Saves the claimer gas if they made a mistake
+        
+        for(uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            _safeMint(msg.sender, tokenId);
+        }
     }
     
-    // Direct Metadata - used to to directly set string values for a Tune.
-
-    function setDirectMetadata(string memory _key, uint _tokenID, string memory _data) public {
-        directMetadata[msg.sender][_key][_tokenID] = _data;
+    function freezeBaseURI() public onlyOwner {
+        frozen = true;
     }
-    
-    // Inherited Metadata - used to set metadata for a Tune using the tokenURI of a deployed derivativeContract
 
-    function setInheritedMetadata(string memory _key, address _address) public {
-        require (inheritedMetadata[msg.sender][_key] == address(0), "You cannot replace this address.");
-        inheritedMetadata[msg.sender][_key] = _address;
+    // The following functions are overrides required by Solidity.
+
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        string memory baseURI = _baseURI();
+        
+        if (bytes(baseURI).length > 0) {
+            return string(abi.encodePacked(baseURI, tokenId.toString()));
+        }
+        
+        return "";
     }
 }
