@@ -29,7 +29,7 @@ contract TunesDerivative is ERC721, ERC721URIStorage, Ownable {
         for(uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
             
-            require(tokenId > 0 && tokenId < tunes.totalSupply(), "You cannot mint outside of the IDs of Tunes.");
+            require(tokenId > 0 && tokenId <= tunes.totalSupply(), "You cannot mint outside of the IDs of Tunes.");
             require(tunes.ownerOf(tokenId) == msg.sender, "You must own the corresponding Tune to mint this.");
         }
         
