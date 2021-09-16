@@ -53,7 +53,7 @@ The basic workflow for to deploy your assets to IPFS is to do the following:
 
 ## TunesMetadata
 
-This is a public contract used to link your new contract to the Tunes ecosystem. We built this so you don't actually have to do anything special in your contracts to "link" to Tunes. 
+This is a public contract used to link your new contract to the Tunes ecosystem. We built this in a way that lets you retroactively link a contract to Tunes.
 
 Essentially, you're going to either directly set metadata for Tunes or link your contract. If this looks like a glorified database, it's because it is! It's a way for us to keep organized on all the derivatives created so that we can properly share them on our public viewer.
 
