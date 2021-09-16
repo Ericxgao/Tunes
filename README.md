@@ -3,15 +3,21 @@
 This repository provides documentation and supporting templates for developers who want to make an official derivative for Tunes.
 
 ## Info
+
 OpenSea: https://opensea.io/collection/tunesproject
+
 Discord: https://discord.com/invite/S7tq8bUkAR
 
 **Mainnet Addresses:**
+
 Tunes Contract: https://etherscan.io/address/0xfa932d5cBbDC8f6Ed6D96Cc6513153aFa9b7487C
+
 Tunes Metadata Contract: https://etherscan.io/address/0xD9692a84cC279a159305a4ef1A01eFab77B4Deb2
 
 **Testnet Addresses:**
+
 Tunes Contract: https://rinkeby.etherscan.io/address/0xfa932d5cBbDC8f6Ed6D96Cc6513153aFa9b7487C
+
 Tunes Metadata Contract: https://rinkeby.etherscan.io/address/0x66B89E9cA3627341484403ECCE2F8A70B23e6E96
 
 ## TunesDerivative
@@ -30,6 +36,8 @@ For example, Tunes returns a link which holds the following JSON data:
 ```
 
 This derivative contract has a few special changes as well. Only Tunes owners are allowed to mint, and they'll only be able to claim token IDs that match the Tunes that they own. You can see this in `claim(uint256[] calldata tokenIds)`.
+
+You will need some OpenZeppelin dependencies to compile this - you can use `npm i @openzeppelin/contracts` if you're in a hardhat environment.
 
 The basic workflow for to deploy your assets to IPFS is to do the following:
 
